@@ -882,21 +882,32 @@ Traitors and the like can also be revived with the previous role mostly intact.
 			for(var/obj/item/organ/V in M)
 				qdel(V)
 
-			var/obj/structure/closet/crate/securecryo/K = new /obj/structure/closet/crate/secure/(M.loc)
+			var/obj/structure/closet/crate/securecryo/K = new /obj/structure/closet/crate/secure(M.loc)
 			K.name = (M.real_name + " - Equipment Crate")
 			K.health = 50
 			for(var/obj/item/W in M)
 				M.drop_from_inventory(W)
 				W.loc = K
 
+			// important
+			M.forceMove(null)
 
 			job_master.FreeRole(job)
 
 			message_admins("\blue [key_name_admin(usr)] has admin cryoed [key_name(M)]")
 			log_admin("[key_name(usr)] admin cryoed [key_name(M)]")
 
-			// Delete the mob.
-			//This should guarantee that ghosts don't spawn.
-			del(M)
-			M = null
-	return
+			// remove the mob from crew records 
+			if (GLOB.mob2crew_record[M])
+				GLOB.all_crew_records -= GLOB.mob2crew_record[M]
+
+			// remove the mob from client2mob
+			if (M.ckey && GLOB.client2mob[M.ckey] == M)
+				GLOB.client2mob[M.ckey] = null
+
+			// null out ckey & client to prevent ghosts
+			M.ckey = null
+			M.client = null
+
+			// delete the mob
+			qdel(M)
