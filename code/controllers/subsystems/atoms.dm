@@ -16,6 +16,8 @@ SUBSYSTEM_DEF(atoms)
 
 	var/list/BadInitializeCalls = list()
 
+	var/last_atom = null
+
 /datum/controller/subsystem/atoms/Initialize(timeofday)
 	initialized = INITIALIZATION_INNEW_MAPLOAD
 	InitializeAtoms()
@@ -37,12 +39,15 @@ SUBSYSTEM_DEF(atoms)
 		for(var/I in atoms)
 			var/atom/A = I
 			if(!A.initialized)
+				last_atom = A.type
 				InitAtom(I, mapload_arg)
 				CHECK_TICK
 	else
 		count = 0
-		for(var/atom/A in world)
+		for(var/atom in world)
+			var/atom/A = atom
 			if(!A.initialized)
+				last_atom = A.type
 				InitAtom(A, mapload_arg)
 				++count
 				CHECK_TICK
@@ -80,13 +85,9 @@ SUBSYSTEM_DEF(atoms)
 				if(arguments[1])	//mapload
 					late_loaders += A
 				else
-					A.LateInitialize(arglist(arguments))
+					A.LateInitialize()
 			if(INITIALIZE_HINT_QDEL)
-				// this seemingly helps avoid hard deletes
-				if (ismovable(A))
-					var/atom/movable/AM = A 
-					AM.forceMove(null)
-				qdel_after(A, 30 SECONDS)
+				qdel(A)
 				qdeleted = TRUE
 			else
 				BadInitializeCalls[the_type] |= BAD_INIT_NO_HINT
